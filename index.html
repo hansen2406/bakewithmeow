@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bake With Meow 🐱</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --cream: #FAF6EF;
+  --warm: #F5EDD9;
+  --brown: #6B4C2A;
+  --brown-light: #9B7A52;
+  --brown-dark: #3E2A14;
+  --pink: #E8A598;
+  --pink-light: #F5D5CF;
+  --green: #7A9E7E;
+  --text: #2C1A0E;
+  --text-muted: #7A6555;
+  --border: #E5D9CC;
+  --white: #FFFFFF;
+  --shadow: 0 2px 16px rgba(107,76,42,0.10);
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+/* ── SHARED ── */
+.hidden { display: none !important; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 50px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; transition: all .2s; }
+.btn-primary { background: var(--brown); color: white; }
+.btn-primary:hover { background: var(--brown-dark); transform: translateY(-1px); }
+.btn-outline { background: transparent; border: 1.5px solid var(--brown); color: var(--brown); }
+.btn-outline:hover { background: var(--brown); color: white; }
+.btn-danger { background: #C0392B; color: white; }
+.btn-success { background: var(--green); color: white; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.tag { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 11px; font-weight: 500; }
+.tag-ok { background: #D4EDDA; color: #285D36; }
+.tag-low { background: #FFF3CD; color: #856404; }
+.tag-out { background: #F8D7DA; color: #721C24; }
+.tag-new { background: var(--pink-light); color: var(--brown); }
+.tag-done { background: #D4EDDA; color: #285D36; }
+.tag-bulk { background: #D1ECF1; color: #0C5460; }
+
+/* ── PAGE SWITCH ── */
+#page-front, #page-admin { min-height: 100vh; }
+
+/* ══════════════════════════════════════════
+   FRONT END (CUSTOMER)
+══════════════════════════════════════════ */
+.front-nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; background: rgba(250,246,239,0.92);
+  backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+}
+.front-logo { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--brown); display: flex; align-items: center; gap: 8px; }
+.nav-links { display: flex; gap: 4px; }
+.nav-link { padding: 7px 14px; border-radius: 50px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: all .2s; border: none; background: none; font-family: inherit; }
+.nav-link:hover, .nav-link.active { background: var(--warm); color: var(--brown); }
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, #F5EDD9 0%, #EDD5C5 50%, #E8C9B8 100%);
+  padding: 64px 24px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '🐱'; font-size: 180px; position: absolute;
+  right: -20px; top: -20px; opacity: .07; pointer-events: none;
+}
+.hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(32px,6vw,52px); font-weight: 700; color: var(--brown-dark); line-height: 1.2; margin-bottom: 12px; }
+.hero p { font-size: 16px; color: var(--text-muted); margin-bottom: 28px; max-width: 440px; margin-inline: auto; }
+.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* Popup Banner */
+.popup-banner {
+  background: var(--brown); color: white;
+  padding: 14px 24px; text-align: center; font-size: 14px;
+}
+.popup-banner strong { font-weight: 600; }
+
+/* Section */
+.section { padding: 48px 24px; max-width: 900px; margin: 0 auto; }
+.section-title { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--brown-dark); margin-bottom: 8px; }
+.section-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+
+/* Schedule */
+.schedule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 14px; }
+.schedule-card {
+  background: var(--white); border-radius: var(--radius);
+  border: 1px solid var(--border); padding: 18px; text-align: center;
+  transition: all .2s; cursor: pointer;
+}
+.schedule-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.schedule-card.today { border-color: var(--pink); background: var(--pink-light); }
+.sched-day { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.sched-date { font-size: 26px; font-weight: 700; color: var(--brown); font-family: 'Playfair Display', serif; margin-bottom: 6px; }
+.sched-loc { font-size: 13px; color: var(--text); margin-bottom: 10px; font-weight: 500; }
+.sched-map { font-size: 12px; color: var(--brown-light); text-decoration: none; }
+
+/* Menu */
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 20px; }
+.menu-card {
+  background: var(--white); border-radius: var(--radius);
+  border: 1px solid var(--border); overflow: hidden;
+  transition: all .2s;
+}
+.menu-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(107,76,42,0.15); }
+.menu-img {
+  height: 140px; display: flex; align-items: center; justify-content: center;
+  font-size: 64px; background: var(--warm);
+}
+.menu-body { padding: 16px; }
+.menu-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: var(--brown-dark); }
+.menu-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+.menu-footer { display: flex; align-items: center; justify-content: space-between; }
+.menu-price { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; color: var(--brown); }
+.menu-stock { font-size: 11px; color: var(--text-muted); }
+.menu-stock.low { color: #C05621; font-weight: 500; }
+.menu-stock.out { color: #C0392B; font-weight: 600; }
+.qty-control { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border); background: none; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--brown); transition: all .2s; }
+.qty-btn:hover { background: var(--warm); }
+.qty-num { font-size: 15px; font-weight: 600; min-width: 20px; text-align: center; }
+.add-cart-btn { flex: 1; padding: 8px; border-radius: 50px; background: var(--brown); color: white; border: none; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500; transition: all .2s; }
+.add-cart-btn:hover { background: var(--brown-dark); }
+.add-cart-btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+/* Cart Toast */
+#cart-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: var(--brown-dark); color: white; border-radius: var(--radius);
+  padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25); font-size: 14px;
+  transform: translateY(80px); opacity: 0; transition: all .3s;
+}
+#cart-toast.show { transform: translateY(0); opacity: 1; }
+
+/* Bulk Order Form */
+.bulk-section { background: var(--warm); border-radius: 24px; padding: 40px 32px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1/-1; }
+.form-label { font-size: 13px; font-weight: 500; color: var(--brown); }
+.form-input {
+  padding: 11px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--white);
+  font-family: inherit; font-size: 14px; color: var(--text);
+  transition: border-color .2s;
+}
+.form-input:focus { outline: none; border-color: var(--brown); }
+select.form-input { cursor: pointer; }
+.check-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.check-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: var(--text); }
+.check-label input { accent-color: var(--brown); }
+.wa-btn {
+  background: #25D366; color: white; border: none; cursor: pointer;
+  padding: 14px 28px; border-radius: 50px; font-size: 15px; font-family: inherit; font-weight: 600;
+  display: flex; align-items: center; gap: 10px; transition: all .2s;
+}
+.wa-btn:hover { background: #1DA851; transform: translateY(-2px); }
+.email-btn {
+  background: var(--white); color: var(--brown); border: 2px solid var(--brown); cursor: pointer;
+  padding: 14px 28px; border-radius: 50px; font-size: 15px; font-family: inherit; font-weight: 600;
+  display: flex; align-items: center; gap: 10px; transition: all .2s;
+}
+.email-btn:hover { background: var(--brown); color: white; }
+
+/* ══════════════════════════════════════════
+   ADMIN / BACK END
+══════════════════════════════════════════ */
+/* Login Gate */
+#admin-login {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--brown-dark);
+}
+.login-card {
+  background: var(--white); border-radius: 20px; padding: 48px 40px;
+  text-align: center; width: 360px; box-shadow: 0 24px 64px rgba(0,0,0,.35);
+}
+.login-icon { font-size: 48px; margin-bottom: 16px; }
+.login-title { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--brown-dark); margin-bottom: 6px; }
+.login-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+.login-hint { font-size: 11px; color: var(--text-muted); margin-top: 12px; background: var(--warm); padding: 8px 12px; border-radius: 8px; }
+.login-error { color: #C0392B; font-size: 13px; margin-top: 8px; }
+#pw-input {
+  width: 100%; padding: 12px 16px; border-radius: 10px;
+  border: 1.5px solid var(--border); font-family: inherit; font-size: 15px;
+  margin-bottom: 12px; text-align: center; letter-spacing: .15em;
+}
+#pw-input:focus { outline: none; border-color: var(--brown); }
+
+/* Admin Layout */
+#admin-dashboard { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--brown-dark); padding: 24px 16px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.sidebar-logo { font-family: 'Playfair Display', serif; font-size: 17px; color: white; padding: 8px 12px; margin-bottom: 16px; opacity: .9; }
+.sidebar-logo span { opacity: .6; font-size: 13px; display: block; font-family: 'DM Sans', sans-serif; font-weight: 300; }
+.s-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px; border: none;
+  background: none; color: rgba(255,255,255,.7); cursor: pointer;
+  font-family: inherit; font-size: 14px; text-align: left; transition: all .2s;
+  width: 100%;
+}
+.s-btn:hover { background: rgba(255,255,255,.1); color: white; }
+.s-btn.active { background: rgba(255,255,255,.18); color: white; font-weight: 500; }
+.s-icon { font-size: 16px; }
+.logout-btn { margin-top: auto; color: rgba(255,255,255,.4); }
+.logout-btn:hover { color: #E88; background: rgba(255,80,80,.15); }
+
+.admin-main { flex: 1; overflow-y: auto; background: #F4EEE6; }
+.admin-topbar {
+  padding: 20px 28px; background: var(--white);
+  border-bottom: 1px solid var(--border); display: flex;
+  align-items: center; justify-content: space-between;
+}
+.topbar-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--brown-dark); }
+.admin-content { padding: 28px; }
+
+/* Admin panels */
+.a-panel { display: none; }
+.a-panel.active { display: block; }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--white); border-radius: var(--radius);
+  padding: 20px; border: 1px solid var(--border);
+}
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.stat-val { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--brown-dark); font-weight: 700; }
+.stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* Table */
+.table-wrap { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+.table-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.table-title { font-size: 15px; font-weight: 600; color: var(--brown-dark); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { padding: 10px 16px; background: var(--warm); text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+tbody tr { border-top: 1px solid var(--border); }
+tbody tr:hover { background: var(--cream); }
+tbody td { padding: 12px 16px; color: var(--text); }
+
+/* Inventory */
+.inv-bar-wrap { display: flex; align-items: center; gap: 10px; }
+.inv-bar { height: 6px; border-radius: 3px; background: var(--border); flex: 1; overflow: hidden; }
+.inv-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+.inv-edit { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-family: inherit; font-size: 13px; width: 60px; text-align: center; }
+.inv-edit:focus { outline: none; border-color: var(--brown); }
+
+/* Charts */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.chart-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; }
+.chart-title { font-size: 14px; font-weight: 600; color: var(--brown-dark); margin-bottom: 16px; }
+
+/* Mobile resp */
+@media (max-width:720px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .sidebar { width: 64px; }
+  .sidebar-logo, .s-btn span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ FRONT END ════════════════ -->
+<div id="page-front">
+
+  <!-- Nav -->
+  <nav class="front-nav">
+    <div class="front-logo">🐱 Bake With Meow</div>
+    <div class="nav-links">
+      <button class="nav-link active" onclick="scrollTo('#schedule-sec')">擺攤日曆</button>
+      <button class="nav-link" onclick="scrollTo('#menu-sec')">菜單</button>
+      <button class="nav-link" onclick="scrollTo('#bulk-sec')">大宗訂購</button>
+      <button class="nav-link" onclick="openAdmin()" style="color:var(--brown-light);font-size:12px">⚙ 後台</button>
+    </div>
+  </nav>
+
+  <!-- Popup Banner -->
+  <div class="popup-banner">
+    🔥 本週爆款｜糯嘰嘰芋泥盒 限量 80 盒 — <strong>剩餘 12 盒</strong>！快來搶
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>手工糯嘰嘰<br>Handmade Mochi Cakes</h1>
+    <p>每日限量手作，從食材到擺盤都是愛 🐾 Penang 夜市爆紅品牌</p>
+    <div class="hero-btns">
+      <button class="btn btn-primary" onclick="scrollTo('#menu-sec')">立即預訂 →</button>
+      <button class="btn btn-outline" onclick="scrollTo('#bulk-sec')">大宗訂購</button>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="section" id="schedule-sec">
+    <div class="section-title">📍 本週擺攤日曆</div>
+    <div class="section-sub">找到我們！點擊地點可查看地圖</div>
+    <div class="schedule-grid" id="schedule-grid"></div>
+  </div>
+
+  <!-- Menu -->
+  <div class="section" id="menu-sec" style="background:var(--white);max-width:100%;padding:48px 0;">
+    <div style="max-width:900px;margin:0 auto;padding:0 24px">
+      <div class="section-title">🍡 今日菜單</div>
+      <div class="section-sub">每日新鮮現做，售完為止 — 建議提前預訂免排隊</div>
+      <div class="menu-grid" id="menu-grid"></div>
+    </div>
+  </div>
+
+  <!-- Bulk Order -->
+  <div class="section" id="bulk-sec">
+    <div class="section-title">🎁 大宗 / 活動訂購</div>
+    <div class="section-sub">婚禮小禮、公司下午茶、夜市補貨——填寫需求，我們直接 WhatsApp 回覆報價</div>
+    <div class="bulk-section">
+      <div class="form-grid" id="bulk-form">
+        <div class="form-group">
+          <label class="form-label">您的姓名</label>
+          <input class="form-input" id="b-name" placeholder="陳小明">
+        </div>
+        <div class="form-group">
+          <label class="form-label">WhatsApp 號碼</label>
+          <input class="form-input" id="b-phone" placeholder="+60 12-345 6789">
+        </div>
+        <div class="form-group">
+          <label class="form-label">需要日期</label>
+          <input class="form-input" type="date" id="b-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">預估數量</label>
+          <select class="form-input" id="b-qty">
+            <option>20–49 盒</option>
+            <option>50–99 盒</option>
+            <option>100 盒以上</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">場合</label>
+          <select class="form-input" id="b-occasion">
+            <option>婚禮 / 喜餅禮盒</option>
+            <option>公司下午茶</option>
+            <option>生日派對</option>
+            <option>年節禮盒</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">預算範圍 (RM)</label>
+          <select class="form-input" id="b-budget">
+            <option>RM 300–600</option>
+            <option>RM 600–1200</option>
+            <option>RM 1200 以上</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">客製需求（可多選）</label>
+          <div class="check-group">
+            <label class="check-label"><input type="checkbox" value="客製貼紙">客製貼紙</label>
+            <label class="check-label"><input type="checkbox" value="禮盒包裝">禮盒包裝</label>
+            <label class="check-label"><input type="checkbox" value="特殊口味">特殊口味</label>
+            <label class="check-label"><input type="checkbox" value="配送服務">配送服務</label>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">備注 / 特別需求</label>
+          <textarea class="form-input" id="b-note" rows="3" placeholder="例如：需要放公司名稱貼紙，全素食物..."></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px">
+        <button class="wa-btn" onclick="sendWhatsApp()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          一鍵 WhatsApp 詢問
+        </button>
+        <button class="email-btn" onclick="sendEmail()">
+          📧 Email 報價
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:var(--brown-dark);color:rgba(255,255,255,.6);text-align:center;padding:24px;font-size:13px">
+    🐱 Bake With Meow · Penang · IG: @bakewithmeowpg · Demo 示範版本
+  </div>
+
+</div>
+
+<!-- Cart Toast -->
+<div id="cart-toast">
+  <span>🛒</span>
+  <span id="cart-msg">已加入購物車！</span>
+</div>
+
+
+<!-- ════════════════ ADMIN LOGIN ════════════════ -->
+<div id="page-admin" class="hidden">
+<div id="admin-login">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">商家後台</div>
+    <div class="login-sub">請輸入管理員密碼</div>
+    <input type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-primary" style="width:100%;justify-content:center;border-radius:10px" onclick="doLogin()">登入</button>
+    <div class="login-error hidden" id="pw-err">❌ 密碼錯誤，請再試一次</div>
+    <div class="login-hint">💡 Demo 密碼：<strong>meow2024</strong></div>
+  </div>
+</div>
+
+<!-- Admin Dashboard (hidden until login) -->
+<div id="admin-dashboard" class="hidden">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">🐱 Meow Admin<span>商家後台</span></div>
+    <button class="s-btn active" onclick="showPanel('overview')" id="sb-overview"><span class="s-icon">📊</span><span>總覽</span></button>
+    <button class="s-btn" onclick="showPanel('orders')" id="sb-orders"><span class="s-icon">📋</span><span>訂單管理</span></button>
+    <button class="s-btn" onclick="showPanel('inventory')" id="sb-inventory"><span class="s-icon">🥣</span><span>食材庫存</span></button>
+    <button class="s-btn" onclick="showPanel('schedule')" id="sb-schedule"><span class="s-icon">📅</span><span>擺攤排程</span></button>
+    <button class="s-btn" onclick="showPanel('reports')" id="sb-reports"><span class="s-icon">📈</span><span>報表分析</span></button>
+    <button class="s-btn logout-btn" onclick="doLogout()"><span class="s-icon">🚪</span><span>登出</span></button>
+  </div>
+
+  <!-- Main -->
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div class="topbar-title" id="panel-title">📊 總覽</div>
+      <button class="btn btn-outline btn-sm" onclick="showFront()">← 查看前台</button>
+    </div>
+    <div class="admin-content">
+
+      <!-- OVERVIEW PANEL -->
+      <div class="a-panel active" id="panel-overview">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">今日訂單</div>
+            <div class="stat-val">14</div>
+            <div class="stat-sub">較昨日 ↑ 3</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">本週營業額</div>
+            <div class="stat-val">RM 1,248</div>
+            <div class="stat-sub">目標 RM 1,500</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">待處理大宗單</div>
+            <div class="stat-val">3</div>
+            <div class="stat-sub">需回覆 WhatsApp</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">庫存警示</div>
+            <div class="stat-val" style="color:#C05621">2</div>
+            <div class="stat-sub">食材需補貨</div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="table-wrap">
+          <div class="table-header">
+            <div class="table-title">最新訂單</div>
+            <button class="btn btn-sm btn-outline" onclick="showPanel('orders')">查看全部</button>
+          </div>
+          <table id="overview-orders-table"></table>
+        </div>
+      </div>
+
+      <!-- ORDERS PANEL -->
+      <div class="a-panel" id="panel-orders">
+        <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+          <button class="btn btn-success" onclick="exportExcel()">📥 匯出 Excel</button>
+          <select class="form-input" style="width:auto;padding:8px 14px;border-radius:50px;font-size:13px" id="order-filter" onchange="renderOrders()">
+            <option value="all">所有訂單</option>
+            <option value="new">待確認</option>
+            <option value="done">已完成</option>
+            <option value="bulk">大宗訂購</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <div class="table-title">訂單列表</div>
+            <div style="font-size:12px;color:var(--text-muted)" id="order-count"></div>
+          </div>
+          <table id="orders-table"></table>
+        </div>
+      </div>
+
+      <!-- INVENTORY PANEL -->
+      <div class="a-panel" id="panel-inventory">
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <button class="btn btn-primary" onclick="saveInventory()">💾 儲存變更</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <div class="table-title">🥣 食材庫存管理</div>
+            <div style="font-size:12px;color:var(--text-muted)">直接修改數量後點儲存</div>
+          </div>
+          <table id="inv-table"></table>
+        </div>
+      </div>
+
+      <!-- SCHEDULE PANEL -->
+      <div class="a-panel" id="panel-schedule">
+        <div class="table-wrap">
+          <div class="table-header">
+            <div class="table-title">📅 擺攤排程管理</div>
+            <div style="font-size:12px;color:var(--text-muted)">更新後前台即時反映</div>
+          </div>
+          <table id="sched-table"></table>
+        </div>
+      </div>
+
+      <!-- REPORTS PANEL -->
+      <div class="a-panel" id="panel-reports">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">本月總營業額</div><div class="stat-val">RM 4,820</div><div class="stat-sub">↑ 18% vs 上月</div></div>
+          <div class="stat-card"><div class="stat-label">本月總訂單</div><div class="stat-val">186</div><div class="stat-sub">平均客單 RM 25.9</div></div>
+          <div class="stat-card"><div class="stat-label">大宗訂單貢獻</div><div class="stat-val">34%</div><div class="stat-sub">RM 1,639</div></div>
+          <div class="stat-card"><div class="stat-label">最暢銷</div><div class="stat-val" style="font-size:18px">芋泥糯嘰</div><div class="stat-sub">佔銷量 41%</div></div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card"><div class="chart-title">本週每日營業額 (RM)</div><canvas id="chart-revenue" height="200"></canvas></div>
+          <div class="chart-card"><div class="chart-title">產品銷量佔比</div><canvas id="chart-products" height="200"></canvas></div>
+          <div class="chart-card"><div class="chart-title">月度趨勢 (過去 6 個月)</div><canvas id="chart-monthly" height="200"></canvas></div>
+          <div class="chart-card"><div class="chart-title">訂單來源分布</div><canvas id="chart-source" height="200"></canvas></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div> <!-- #admin-dashboard -->
+</div> <!-- #page-admin -->
+
+
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const PASS = 'meow2024'; // Demo password — in production use server-side auth
+
+const schedule = [
+  { day:'週一', date:'14', month:'4', loc:'Farlim 夜市', maps:'https://maps.google.com', active:false },
+  { day:'週二', date:'15', month:'4', loc:'Tanjung Bungah', maps:'https://maps.google.com', active:true },
+  { day:'週三', date:'16', month:'4', loc:'牛乾冬夜市', maps:'https://maps.google.com', active:false },
+  { day:'週四', date:'17', month:'4', loc:'休息', maps:'', active:false },
+  { day:'週五', date:'18', month:'4', loc:'Gurney 廣場', maps:'https://maps.google.com', active:false },
+  { day:'週六', date:'19', month:'4', loc:'Georgetown 假日市集', maps:'https://maps.google.com', active:false },
+  { day:'週日', date:'20', month:'4', loc:'Batu Ferringhi 夜市', maps:'https://maps.google.com', active:false },
+];
+
+const menuItems = [
+  { id:1, name:'芋泥糯嘰嘰', desc:'新鮮芋泥內餡，外皮 Q 彈有嚼勁，牽絲效果超誘人', price:'RM 6.5', emoji:'🍡', stock:12, max:80, qty:1 },
+  { id:2, name:'抹茶紅豆糯嘰', desc:'日本抹茶粉 + 北海道紅豆，微苦清爽的完美組合', price:'RM 6.5', emoji:'🍵', stock:28, max:80, qty:1 },
+  { id:3, name:'黑糖珍珠糯嘰', desc:'濃郁黑糖糖漿 + 嚼勁珍珠，手搖飲愛好者必點', price:'RM 7', emoji:'🧋', stock:0, max:60, qty:1 },
+  { id:4, name:'草莓煉乳盒', desc:'新鮮草莓 + 手工煉乳，酸甜比例剛好，少女心爆發', price:'RM 8', emoji:'🍓', stock:5, max:50, qty:1 },
+  { id:5, name:'榴槤原味盒', desc:'馬來西亞本地貓山王榴槤，榴槤控的終極夢想', price:'RM 12', emoji:'🌟', stock:20, max:40, qty:1 },
+  { id:6, name:'綜合口味 4 件組', desc:'自選 4 種口味，與朋友分享最划算', price:'RM 24', emoji:'🎁', stock:15, max:40, qty:1 },
+];
+
+let inventory = [
+  { name:'糯米粉', unit:'kg', current:4.5, min:3, max:20 },
+  { name:'芋頭', unit:'kg', current:1.8, min:2, max:15 },
+  { name:'抹茶粉 (日本)', unit:'g', current:350, min:200, max:1000 },
+  { name:'紅豆 (北海道)', unit:'kg', current:3.2, min:2, max:10 },
+  { name:'黑糖', unit:'kg', current:2.1, min:1, max:8 },
+  { name:'草莓 (新鮮)', unit:'kg', current:0.6, min:1, max:5 },
+  { name:'煉乳', unit:'罐', current:5, min:3, max:20 },
+  { name:'榴槤果肉', unit:'kg', current:2.4, min:1, max:8 },
+  { name:'珍珠 (黑糖)', unit:'kg', current:1.5, min:1, max:5 },
+  { name:'椰漿', unit:'罐', current:8, min:5, max:24 },
+];
+
+const orders = [
+  { id:'#1042', date:'2025-04-15', name:'林小如', item:'芋泥糯嘰嘰 ×4 + 草莓煉乳 ×2', amt:'RM 42', status:'new', type:'retail' },
+  { id:'#1041', date:'2025-04-15', name:'陳志明', item:'綜合口味 4件組 ×3', amt:'RM 72', status:'done', type:'retail' },
+  { id:'#1040', date:'2025-04-14', name:'Wong Mei Lin', item:'大宗訂購 50 盒 (婚禮)', amt:'RM 280', status:'new', type:'bulk' },
+  { id:'#1039', date:'2025-04-14', name:'Raj Kumar', item:'抹茶紅豆糯嘰 ×6', amt:'RM 39', status:'done', type:'retail' },
+  { id:'#1038', date:'2025-04-13', name:'張美玲', item:'大宗訂購 80 盒 (公司)', amt:'RM 440', status:'new', type:'bulk' },
+  { id:'#1037', date:'2025-04-13', name:'Aisha Binti Ahmad', item:'榴槤原味盒 ×2', amt:'RM 24', status:'done', type:'retail' },
+  { id:'#1036', date:'2025-04-12', name:'李大偉', item:'黑糖珍珠糯嘰 ×8', amt:'RM 56', status:'done', type:'retail' },
+  { id:'#1035', date:'2025-04-12', name:'Tan Siew Ling', item:'大宗訂購 120 盒 (年節)', amt:'RM 660', status:'new', type:'bulk' },
+];
+
+// ═══════════════════════════════════════
+// FRONT END RENDERING
+// ═══════════════════════════════════════
+function renderSchedule() {
+  const g = document.getElementById('schedule-grid');
+  g.innerHTML = schedule.map(s => `
+    <div class="schedule-card ${s.active?'today':''}" onclick="${s.maps?`window.open('${s.maps}','_blank')`:''}">
+      ${s.active?'<div style="font-size:11px;color:var(--brown);font-weight:600;margin-bottom:4px">📍 今天</div>':''}
+      <div class="sched-day">${s.day}</div>
+      <div class="sched-date">${s.date}</div>
+      <div class="sched-loc">${s.loc}</div>
+      ${s.maps?`<div class="sched-map">查看地圖 →</div>`:'<div class="sched-map" style="color:var(--border)">休息</div>'}
+    </div>`).join('');
+}
+
+function renderMenu() {
+  const g = document.getElementById('menu-grid');
+  g.innerHTML = menuItems.map(item => {
+    const pct = item.stock / item.max * 100;
+    const stockClass = item.stock === 0 ? 'out' : item.stock <= 8 ? 'low' : '';
+    const stockTxt = item.stock === 0 ? '❌ 售完' : item.stock <= 8 ? `🔥 剩 ${item.stock} 盒` : `✅ 尚有 ${item.stock} 盒`;
+    return `<div class="menu-card">
+      <div class="menu-img">${item.emoji}</div>
+      <div class="menu-body">
+        <div class="menu-name">${item.name}</div>
+        <div class="menu-desc">${item.desc}</div>
+        <div class="menu-footer">
+          <div class="menu-price">${item.price}</div>
+          <div class="menu-stock ${stockClass}">${stockTxt}</div>
+        </div>
+        ${item.stock > 0 ? `
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(${item.id},-1)">−</button>
+          <div class="qty-num" id="qty-${item.id}">${item.qty}</div>
+          <button class="qty-btn" onclick="changeQty(${item.id},1)">+</button>
+          <button class="add-cart-btn" onclick="addCart(${item.id})">加入訂單</button>
+        </div>` : `<button class="add-cart-btn" disabled style="width:100%;margin-top:10px">已售完</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function changeQty(id, delta) {
+  const item = menuItems.find(i => i.id === id);
+  item.qty = Math.max(1, Math.min(item.stock, item.qty + delta));
+  document.getElementById('qty-'+id).textContent = item.qty;
+}
+
+function addCart(id) {
+  const item = menuItems.find(i => i.id === id);
+  const toast = document.getElementById('cart-toast');
+  document.getElementById('cart-msg').textContent = `已加入 ${item.qty} 盒「${item.name}」！`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+function scrollTo(sel) {
+  const el = document.querySelector(sel);
+  if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ═══════════════════════════════════════
+// BULK ORDER — WhatsApp + Email
+// ═══════════════════════════════════════
+function getBulkData() {
+  const checks = [...document.querySelectorAll('#bulk-form input[type=checkbox]:checked')].map(c => c.value);
+  return {
+    name: document.getElementById('b-name').value || '（未填）',
+    phone: document.getElementById('b-phone').value || '（未填）',
+    date: document.getElementById('b-date').value || '（未填）',
+    qty: document.getElementById('b-qty').value,
+    occasion: document.getElementById('b-occasion').value,
+    budget: document.getElementById('b-budget').value,
+    customs: checks.join('、') || '無',
+    note: document.getElementById('b-note').value || '無',
+  };
+}
+
+function sendWhatsApp() {
+  const d = getBulkData();
+  const msg = `你好！我是由 Bake With Meow 官網大宗訂購頁過來詢問的 🐱\n\n👤 姓名：${d.name}\n📱 聯絡：${d.phone}\n📅 需要日期：${d.date}\n📦 數量：${d.qty}\n🎉 場合：${d.occasion}\n💰 預算：${d.budget}\n✏️ 客製需求：${d.customs}\n📝 備注：${d.note}\n\n請問方便報價嗎？謝謝！`;
+  window.open('https://wa.me/60123456789?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function sendEmail() {
+  const d = getBulkData();
+  const sub = `大宗訂購詢問 — ${d.occasion} (${d.date})`;
+  const body = `你好，我想詢問大宗訂購：\n\n姓名：${d.name}\n聯絡：${d.phone}\n需要日期：${d.date}\n數量：${d.qty}\n場合：${d.occasion}\n預算：${d.budget}\n客製需求：${d.customs}\n備注：${d.note}`;
+  window.open(`mailto:bakewithmeow@gmail.com?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`);
+}
+
+// ═══════════════════════════════════════
+// ADMIN AUTH
+// ═══════════════════════════════════════
+let loggedIn = false;
+
+function openAdmin() {
+  document.getElementById('page-front').classList.add('hidden');
+  document.getElementById('page-admin').classList.remove('hidden');
+  if (!loggedIn) {
+    document.getElementById('admin-login').classList.remove('hidden');
+    document.getElementById('admin-dashboard').classList.add('hidden');
+  }
+}
+
+function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === PASS) {
+    loggedIn = true;
+    document.getElementById('admin-login').classList.add('hidden');
+    document.getElementById('admin-dashboard').classList.remove('hidden');
+    initAdmin();
+  } else {
+    document.getElementById('pw-err').classList.remove('hidden');
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+    setTimeout(() => document.getElementById('pw-err').classList.add('hidden'), 3000);
+  }
+}
+
+function doLogout() {
+  loggedIn = false;
+  document.getElementById('pw-input').value = '';
+  document.getElementById('admin-dashboard').classList.add('hidden');
+  document.getElementById('admin-login').classList.remove('hidden');
+}
+
+function showFront() {
+  document.getElementById('page-admin').classList.add('hidden');
+  document.getElementById('page-front').classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════
+// ADMIN PANELS
+// ═══════════════════════════════════════
+function showPanel(id) {
+  document.querySelectorAll('.a-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.s-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('sb-'+id).classList.add('active');
+  const titles = { overview:'📊 總覽', orders:'📋 訂單管理', inventory:'🥣 食材庫存', schedule:'📅 擺攤排程', reports:'📈 報表分析' };
+  document.getElementById('panel-title').textContent = titles[id];
+  if (id === 'reports') setTimeout(initCharts, 50);
+  if (id === 'inventory') renderInventory();
+  if (id === 'schedule') renderSchedAdmin();
+}
+
+// ── OVERVIEW ORDERS ──
+function renderOverviewOrders() {
+  const t = document.getElementById('overview-orders-table');
+  t.innerHTML = `<thead><tr><th>訂單編號</th><th>日期</th><th>顧客</th><th>項目</th><th>金額</th><th>狀態</th></tr></thead><tbody>` +
+    orders.slice(0,5).map(o => `<tr>
+      <td style="font-weight:600;color:var(--brown)">${o.id}</td>
+      <td>${o.date}</td><td>${o.name}</td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.item}</td>
+      <td style="font-weight:600">${o.amt}</td>
+      <td><span class="tag ${o.status==='new'?'tag-new':o.type==='bulk'?'tag-bulk':'tag-done'}">${o.status==='new'?'待確認':o.type==='bulk'?'大宗':'已完成'}</span></td>
+    </tr>`).join('') + '</tbody>';
+}
+
+// ── ORDERS TABLE ──
+function renderOrders() {
+  const filter = document.getElementById('order-filter').value;
+  const filtered = filter === 'all' ? orders :
+    filter === 'new' ? orders.filter(o => o.status==='new') :
+    filter === 'done' ? orders.filter(o => o.status==='done') :
+    orders.filter(o => o.type==='bulk');
+  document.getElementById('order-count').textContent = `共 ${filtered.length} 筆`;
+  const t = document.getElementById('orders-table');
+  t.innerHTML = `<thead><tr><th>訂單編號</th><th>日期</th><th>顧客姓名</th><th>訂購項目</th><th>金額</th><th>類型</th><th>狀態</th><th>操作</th></tr></thead><tbody>` +
+    filtered.map(o => `<tr>
+      <td style="font-weight:600;color:var(--brown)">${o.id}</td>
+      <td>${o.date}</td><td>${o.name}</td>
+      <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">${o.item}</td>
+      <td style="font-weight:600">${o.amt}</td>
+      <td><span class="tag ${o.type==='bulk'?'tag-bulk':'tag-done'}">${o.type==='bulk'?'大宗':'零售'}</span></td>
+      <td><span class="tag ${o.status==='new'?'tag-new':'tag-done'}">${o.status==='new'?'待確認':'已完成'}</span></td>
+      <td><button class="btn btn-sm btn-outline" onclick="toggleOrder('${o.id}')">更新</button></td>
+    </tr>`).join('') + '</tbody>';
+}
+
+function toggleOrder(id) {
+  const o = orders.find(x => x.id === id);
+  if (o) { o.status = o.status === 'new' ? 'done' : 'new'; renderOrders(); renderOverviewOrders(); }
+}
+
+// ── EXCEL EXPORT ──
+function exportExcel() {
+  const filter = document.getElementById('order-filter').value;
+  const data = filter === 'all' ? orders :
+    filter === 'bulk' ? orders.filter(o => o.type==='bulk') :
+    orders.filter(o => o.status === filter);
+
+  let csv = '\uFEFF'; // BOM for Excel UTF-8
+  csv += '訂單編號,日期,顧客姓名,訂購項目,金額,類型,狀態\n';
+  data.forEach(o => {
+    csv += `${o.id},${o.date},${o.name},"${o.item}",${o.amt},${o.type==='bulk'?'大宗':'零售'},${o.status==='new'?'待確認':'已完成'}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `BakeWithMeow_訂單_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── INVENTORY ──
+function renderInventory() {
+  const t = document.getElementById('inv-table');
+  t.innerHTML = `<thead><tr><th>食材名稱</th><th>現有數量</th><th>單位</th><th>狀態</th><th>庫存量</th><th>修改數量</th></tr></thead><tbody>` +
+    inventory.map((item, i) => {
+      const pct = Math.min(100, item.current / item.max * 100);
+      const status = item.current <= 0 ? ['tag-out','缺貨'] : item.current < item.min ? ['tag-low','偏低'] : ['tag-ok','充足'];
+      const barColor = item.current < item.min ? '#C05621' : '#7A9E7E';
+      return `<tr>
+        <td style="font-weight:500">${item.name}</td>
+        <td style="font-weight:600;color:var(--brown)">${item.current} ${item.unit}</td>
+        <td style="color:var(--text-muted)">${item.unit}</td>
+        <td><span class="tag ${status[0]}">${status[1]}</span></td>
+        <td style="width:140px">
+          <div class="inv-bar-wrap">
+            <div class="inv-bar"><div class="inv-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <span style="font-size:11px;color:var(--text-muted);min-width:28px">${Math.round(pct)}%</span>
+          </div>
+        </td>
+        <td><input class="inv-edit" id="inv-qty-${i}" value="${item.current}" type="number" min="0" step="0.1"></td>
+      </tr>`;
+    }).join('') + '</tbody>';
+}
+
+function saveInventory() {
+  inventory.forEach((item, i) => {
+    const val = parseFloat(document.getElementById('inv-qty-'+i).value);
+    if (!isNaN(val)) item.current = val;
+  });
+  renderInventory();
+  const t = document.getElementById('cart-toast');
+  document.getElementById('cart-msg').textContent = '✅ 庫存已儲存！';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── SCHEDULE ADMIN ──
+function renderSchedAdmin() {
+  const t = document.getElementById('sched-table');
+  t.innerHTML = `<thead><tr><th>星期</th><th>日期</th><th>地點</th><th>Google Maps 連結</th><th>狀態</th></tr></thead><tbody>` +
+    schedule.map((s, i) => `<tr>
+      <td style="font-weight:600">${s.day}</td>
+      <td>${s.date}/${s.month}</td>
+      <td><input style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:13px;width:150px" value="${s.loc}" onchange="schedule[${i}].loc=this.value;renderSchedule()"></td>
+      <td><input style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:12px;width:200px" value="${s.maps}" placeholder="https://maps.google.com/..." onchange="schedule[${i}].maps=this.value"></td>
+      <td><span class="tag ${s.active?'tag-ok':'tag-low'}">${s.active?'今天':'排定'}</span></td>
+    </tr>`).join('') + '</tbody>';
+}
+
+// ── CHARTS ──
+let chartsInit = false;
+function initCharts() {
+  if (chartsInit) return;
+  chartsInit = true;
+  const co = { responsive: true, plugins: { legend: { position:'bottom', labels:{ font:{size:12}, padding:12 } } } };
+
+  new Chart(document.getElementById('chart-revenue'), {
+    type:'bar',
+    data: { labels:['週一','週二','週三','週四','週五','週六','週日'],
+      datasets:[{ label:'營業額 (RM)', data:[148,212,95,0,285,410,380],
+        backgroundColor:'#C4956A', borderRadius:6 }] },
+    options: { ...co, plugins:{...co.plugins,legend:{display:false}}, scales:{ y:{beginAtZero:true, grid:{color:'#EEE'} } } }
+  });
+
+  new Chart(document.getElementById('chart-products'), {
+    type:'doughnut',
+    data: { labels:['芋泥糯嘰嘰','抹茶紅豆','草莓煉乳','黑糖珍珠','榴槤原味','綜合盒'],
+      datasets:[{ data:[41,22,14,10,7,6],
+        backgroundColor:['#C4956A','#7A9E7E','#E8A598','#6B4C2A','#B8936A','#D4B896'] }] },
+    options: co
+  });
+
+  new Chart(document.getElementById('chart-monthly'), {
+    type:'line',
+    data: { labels:['11月','12月','1月','2月','3月','4月'],
+      datasets:[{ label:'月營業額 (RM)', data:[2100,3200,2800,3600,4100,4820],
+        borderColor:'#C4956A', backgroundColor:'rgba(196,149,106,.12)', fill:true, tension:.4, pointBackgroundColor:'#6B4C2A', pointRadius:4 }] },
+    options: { ...co, plugins:{...co.plugins,legend:{display:false}}, scales:{ y:{beginAtZero:false, grid:{color:'#EEE'} } } }
+  });
+
+  new Chart(document.getElementById('chart-source'), {
+    type:'pie',
+    data: { labels:['IG 點入','WhatsApp 大宗','網站直接','口耳相傳'],
+      datasets:[{ data:[54,22,16,8],
+        backgroundColor:['#E8A598','#C4956A','#7A9E7E','#B8936A'] }] },
+    options: co
+  });
+}
+
+// ── INIT ──
+function initAdmin() {
+  renderOverviewOrders();
+  renderOrders();
+}
+
+// INIT FRONT END
+renderSchedule();
+renderMenu();
+</script>
+</body>
+</html>
